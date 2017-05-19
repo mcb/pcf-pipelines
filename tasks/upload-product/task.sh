@@ -28,7 +28,7 @@ function main() {
     export TILE_UPLOAD_TIMEOUT=1800 
   fi
 
-  ./${CMD_PATH} --target "${OPSMAN_URI}" \
+  ./${CMD_PATH} --target "opsman.${OPSMAN_URI}" \
      --skip-ssl-validation \
      --username "${OPSMAN_USERNAME}" \
      --password "${OPSMAN_PASSWORD}" \
