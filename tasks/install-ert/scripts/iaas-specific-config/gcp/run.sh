@@ -5,7 +5,7 @@ unzip terraform-zip/terraform.zip
 mv terraform /usr/local/bin
 
 cd terraform-state
-  db_host=$(terraform output --json | jq --raw-output '.sql_instance_ip.value')
+  db_host=$(terraform output -json -state=terraform-$version.tfstate | jq --raw-output '.sql_instance_ip.value')
 cd -
 
 if [ -z "$db_host" ]; then
