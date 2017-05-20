@@ -27,7 +27,7 @@ function main() {
     version="$(unzip -p *.pivotal 'metadata/*.yml' | grep 'product_version:' | cut -d ':' -f 2 | tr -d ' ' | tr -d "'")"
   popd
 
-  ./${CMD_PATH} --target "${OPSMAN_URI}" \
+  ./${CMD_PATH} --target "opsman.${OPSMAN_URI}" \
      --skip-ssl-validation \
      --username "${OPSMAN_USERNAME}" \
      --password "${OPSMAN_PASSWORD}" \
