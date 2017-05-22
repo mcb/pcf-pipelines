@@ -52,6 +52,24 @@
       ".properties.system_database.external.host": {
         "value": "{{db_host}}"
       },
+      ".properties.system_database.external.account_username": {
+        "value": "{{db_account_username}}"
+      },
+      ".properties.system_database.external.account_password": {
+        "value": "{{db_account_password}}"
+      },
+      ".properties.system_database.external.networkpolicyserver_username": {
+        "value": "{{db_networkpolicyserver_username}}"
+      },
+      ".properties.system_database.external.networkpolicyserver_password": {
+        "value": "{{db_networkpolicyserver_password}}"
+      },
+      ".properties.system_database.external.nfsvolume_username": {
+        "value": "{{db_nfsvolume_username}}"
+      },
+      ".properties.system_database.external.nfsvolume_password": {
+        "value": "{{db_nfsvolume_password}}"
+      },
       ".properties.system_database.external.app_usage_service_username": {
         "value": "{{db_app_usage_service_username}}"
       },
