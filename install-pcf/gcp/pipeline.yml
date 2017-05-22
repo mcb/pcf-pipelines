@@ -270,6 +270,12 @@ jobs:
       db_ccdb_password: {{db_ccdb_password}}
       db_routing_username: {{db_routing_username}}
       db_routing_password: {{db_routing_password}}
+      db_account_username: {{db_account_username}}
+      db_account_password: {{db_account_password}}
+      db_networkpolicyserver_username: {{db_networkpolicyserver_username}}
+      db_networkpolicyserver_password: {{db_networkpolicyserver_password}}
+      db_nfsvolume_username: {{db_nfsvolume_username}}
+      db_nfsvolume_password: {{db_nfsvolume_password}}
       mysql_monitor_recipient_email: {{mysql_monitor_recipient_email}}
       MYSQL_BACKUPS: {{mysql_backups}}
       MYSQL_BACKUPS_SCP_SERVER: {{mysql_backups_scp_server}}
