@@ -10,7 +10,6 @@ PATH=$PWD/jq:$PATH
 
 json_file_path="pcf-pipelines/tasks/install-ert/json_templates/${pcf_iaas}/${terraform_template}"
 json_file_template="${json_file_path}/ert-template.json"
-version=$(cat terraform-state/version)
 
 if [ ! -f "$json_file_template" ]; then
   echo "Error: can't find file=[${json_file_template}]"

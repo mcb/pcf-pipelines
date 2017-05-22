@@ -4,6 +4,8 @@ set -e
 unzip terraform-zip/terraform.zip
 mv terraform /usr/local/bin
 
+version=$(cat terraform-state/version)
+
 cd terraform-state
   db_host=$(terraform output -json -state=terraform-$version.tfstate | jq --raw-output '.sql_instance_ip.value')
 cd -
