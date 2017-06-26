@@ -55,7 +55,7 @@ jobs:
     - get: pcf-pipelines
     - get: terraform-state
   - task: wipe
-    file: pcf-pipelines/tasks/install-pcf-gcp/wipe-env/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/wipe-env/task.yml
     params:
       GCP_PROJECT_ID: {{gcp_project_id}}
       GCP_REGION: {{gcp_region}}
@@ -73,7 +73,7 @@ jobs:
       globs:
       - "*GCP.yml"
   - task: upload
-    file: pcf-pipelines/tasks/install-pcf-gcp/upload-opsman/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/upload-opsman/task.yml
     params:
       GCP_PROJECT_ID: {{gcp_project_id}}
       GCP_REGION: {{gcp_region}}
@@ -108,7 +108,7 @@ jobs:
         globs:
         - "*GCP.yml"
   - task: create-infrastructure
-    file: pcf-pipelines/tasks/install-pcf-gcp/create-infrastructure/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/create-infrastructure/task.yml
     params:
       GCP_PROJECT_ID: {{gcp_project_id}}
       GCP_REGION: {{gcp_region}}
@@ -150,28 +150,28 @@ jobs:
       passed: [create-infrastructure]
       params: {globs: []}
   - task: check-opsman-dns
-    file: pcf-pipelines/tasks/install-pcf-gcp/check-opsman-dns/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/check-opsman-dns/task.yml
     params:
       pcf_ert_domain: {{pcf_ert_domain}}
   - task: configure-opsman-auth
-    file: pcf-pipelines/tasks/install-pcf-gcp/config-opsman-auth/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/config-opsman-auth/task.yml
     params:
       pcf_ert_domain: {{pcf_ert_domain}}
       pcf_opsman_admin_username: {{pcf_opsman_admin_username}}
       pcf_opsman_admin_password: {{pcf_opsman_admin_password}}
   - task: configure-director
-    file: pcf-pipelines/tasks/install-pcf-gcp/config-director/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/config-director/task.yml
     params:
-      pcf_ert_domain: {{pcf_ert_domain}}
-      pcf_opsman_admin: {{pcf_opsman_admin_username}}
-      pcf_opsman_admin_passwd: {{pcf_opsman_admin_password}}
-      gcp_proj_id: {{gcp_project_id}}
-      gcp_region: {{gcp_region}}
-      gcp_zone_1: {{gcp_zone_1}}
-      gcp_zone_2: {{gcp_zone_2}}
-      gcp_zone_3: {{gcp_zone_3}}
-      gcp_resource_prefix: {{gcp_resource_prefix}}
-      gcp_svc_acct_key: {{gcp_service_account_key}}
+      OPS_MGR_HOST: {{opsman_uri}}
+      OPS_MGR_USR: {{pcf_opsman_admin_username}}
+      OPS_MGR_PWD: {{pcf_opsman_admin_password}}
+      GCP_PROJECT_ID: {{gcp_project_id}}
+      GCP_REGION: {{gcp_region}}
+      GCP_ZONE_1: {{gcp_zone_1}}
+      GCP_ZONE_2: {{gcp_zone_2}}
+      GCP_ZONE_3: {{gcp_zone_3}}
+      GCP_RESOURCE_PREFIX: {{gcp_resource_prefix}}
+      GCP_SERVICE_ACCOUNT_KEY: {{gcp_service_account_key}}
 
 - name: deploy-director
   serial_groups: [opsman]
@@ -183,7 +183,7 @@ jobs:
       trigger: true
       params: {globs: []}
   - task: deploy-director
-    file: pcf-pipelines/tasks/install-pcf-gcp/deploy-director/task.yml
+    file: pcf-pipelines/install-pcf/gcp/tasks/deploy-director/task.yml
     params:
       pcf_ert_domain: {{pcf_ert_domain}}
       pcf_opsman_admin_username: {{pcf_opsman_admin_username}}
@@ -210,7 +210,7 @@ jobs:
       OPS_MGR_USR: {{pcf_opsman_admin_username}}
       OPS_MGR_PWD: {{pcf_opsman_admin_password}}
       PIVNET_API_TOKEN: {{pivnet_token}}
-      STEMCELL_GLOB: "*google*"
+      IAAS: "google"
       NO_PROXY: ""
       OM_IP: ""
 
@@ -243,11 +243,8 @@ jobs:
       pcf_az_1: {{gcp_zone_1}}
       pcf_az_2: {{gcp_zone_2}}
       pcf_az_3: {{gcp_zone_3}}
-      gcp_proj_id: {{gcp_project_id}}
-      gcp_region: {{gcp_region}}
       gcp_storage_access_key: {{gcp_storage_access_key}}
       gcp_storage_secret_key: {{gcp_storage_secret_key}}
-      gcp_svc_acct_key: {{gcp_service_account_key}}
       pcf_ert_domain: {{pcf_ert_domain}}
       pcf_opsman_admin: {{pcf_opsman_admin_username}}
       pcf_opsman_admin_passwd: {{pcf_opsman_admin_password}}
@@ -272,6 +269,10 @@ jobs:
       db_networkpolicyserverdb_password: {{db_networkpolicyserverdb_password}}
       db_nfsvolumedb_username: {{db_nfsvolumedb_username}}
       db_nfsvolumedb_password: {{db_nfsvolumedb_password}}         
+      db_silk_username: {{db_silk_username}}
+      db_silk_password: {{db_silk_password}}
+      db_locket_username: {{db_locket_username}}
+      db_locket_password: {{db_locket_password}}
       mysql_monitor_recipient_email: {{mysql_monitor_recipient_email}}
       MYSQL_BACKUPS: {{mysql_backups}}
       MYSQL_BACKUPS_SCP_SERVER: {{mysql_backups_scp_server}}
@@ -287,9 +288,6 @@ jobs:
       MYSQL_BACKUPS_S3_SECRET_ACCESS_KEY: {{mysql_backups_s3_secret_access_key}}
       MYSQL_BACKUPS_S3_CRON_SCHEDULE: {{mysql_backups_s3_cron_schedule}}
       # aws specific
-      bucket:
-      TF_VAR_aws_access_key:
-      TF_VAR_aws_secret_key:
       S3_ENDPOINT:
 
   - task: configure-ert
@@ -299,6 +297,15 @@ jobs:
       pcf_ert_domain: {{pcf_ert_domain}}
       pcf_opsman_admin: {{pcf_opsman_admin_username}}
       pcf_opsman_admin_passwd: {{pcf_opsman_admin_password}}
+
+  - task: disable-errands
+    file: pcf-pipelines/tasks/disable-errands/task.yml
+    params:
+      PRODUCT_NAME: cf
+      OPSMAN_URI: {{opsman_uri}}
+      OPSMAN_USERNAME: {{pcf_opsman_admin_username}}
+      OPSMAN_PASSWORD: {{pcf_opsman_admin_password}}
+      ERRANDS_TO_DISABLE: {{ert_errands_to_disable}}
 
   - task: deploy-ert
     file: pcf-pipelines/tasks/apply-changes/task.yml

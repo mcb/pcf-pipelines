@@ -88,7 +88,7 @@ jobs:
           echo $ami > ami/ami
 
   - task: create-infrastructure
-    file: pcf-pipelines/tasks/install-pcf-aws/prepare-aws/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/prepare-aws/task.yml
     params:
       DB_MASTER_USERNAME: {{db_master_username}}
       DB_MASTER_PASSWORD: {{db_master_password}}
@@ -121,6 +121,8 @@ jobs:
       TF_VAR_nat_ip_az1: {{TF_VAR_nat_ip_az1}}
       TF_VAR_nat_ip_az2: {{TF_VAR_nat_ip_az2}}
       TF_VAR_nat_ip_az3: {{TF_VAR_nat_ip_az3}}
+      OPSMAN_ALLOW_SSH_CIDR_RANGES: {{opsman_allow_ssh_cidr_ranges}}
+      OPSMAN_ALLOW_HTTPS_CIDR_RANGES: {{opsman_allow_https_cidr_ranges}}
     ensure:
       put: terraform-state
       params:
@@ -135,13 +137,13 @@ jobs:
       trigger: true
       passed: [create-infrastructure]
   - task: configure-opsman-auth
-    file: pcf-pipelines/tasks/install-pcf-aws/config-opsman/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/config-opsman/task.yml
     params:
       ERT_DOMAIN: {{ERT_DOMAIN}}
       OPSMAN_USER: {{OPSMAN_USER}}
       OPSMAN_PASSWORD: {{OPSMAN_PASSWORD}}
   - task: configure-director
-    file: pcf-pipelines/tasks/install-pcf-aws/config-director/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/config-director/task.yml
     params:
       ERT_DOMAIN: {{ERT_DOMAIN}}
       OPSMAN_USER: {{OPSMAN_USER}}
@@ -168,7 +170,7 @@ jobs:
       trigger: true
       passed: [configure-director]
   - task: deploy-director
-    file: pcf-pipelines/tasks/install-pcf-aws/deploy-director/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/deploy-director/task.yml
     params:
       pcf_ert_domain: {{ERT_DOMAIN}}
       pcf_opsman_admin: {{OPSMAN_USER}}
@@ -194,7 +196,7 @@ jobs:
       OPS_MGR_USR: {{OPSMAN_USER}}
       OPS_MGR_PWD: {{OPSMAN_PASSWORD}}
       PIVNET_API_TOKEN: {{pivnet_token}}
-      STEMCELL_GLOB: "*aws*"
+      IAAS: "aws"
       NO_PROXY: ""
       OM_IP: ""
   - task: stage-tile
@@ -215,7 +217,7 @@ jobs:
       passed: [upload-ert]
 
   - task: prepare-rds
-    file: pcf-pipelines/tasks/install-pcf-aws/prepare-rds/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/prepare-rds/task.yml
     params:
       PEM: {{PEM}}
       ERT_DOMAIN: {{ERT_DOMAIN}}
@@ -239,6 +241,10 @@ jobs:
       DB_NETWORKPOLICYSERVERDB_PASSWORD: {{db_networkpolicyserverdb_password}}
       DB_NFSVOLUMEDB_USERNAME: {{db_nfsvolumedb_username}}
       DB_NFSVOLUMEDB_PASSWORD: {{db_nfsvolumedb_password}}
+      DB_LOCKET_USERNAME: {{db_locket_username}}
+      DB_LOCKET_PASSWORD: {{db_locket_password}}
+      DB_SILK_USERNAME: {{db_silk_username}}
+      DB_SILK_PASSWORD: {{db_silk_password}}
 
   - task: configure-json
     file: pcf-pipelines/tasks/install-ert/configure-json/task.yml
@@ -254,9 +260,6 @@ jobs:
       pcf_az_3: {{TF_VAR_az3}}
       terraform_template: default
       terraform_prefix: {{terraform_prefix}}
-      bucket: {{S3_OUTPUT_BUCKET}}
-      TF_VAR_aws_access_key: {{TF_VAR_aws_access_key}}
-      TF_VAR_aws_secret_key: {{TF_VAR_aws_secret_key}}
       S3_ENDPOINT: {{S3_ENDPOINT}}
       mysql_monitor_recipient_email: {{mysql_monitor_recipient_email}}
       MYSQL_BACKUPS: {{mysql_backups}}
@@ -273,9 +276,6 @@ jobs:
       MYSQL_BACKUPS_S3_SECRET_ACCESS_KEY: {{mysql_backups_s3_secret_access_key}}
       MYSQL_BACKUPS_S3_CRON_SCHEDULE: {{mysql_backups_s3_cron_schedule}}
       # IaaS Specific for GCP only
-      gcp_proj_id:
-      gcp_region:
-      gcp_svc_acct_key:
       gcp_storage_access_key:
       gcp_storage_secret_key:
       # db credentials
@@ -299,6 +299,10 @@ jobs:
       db_networkpolicyserverdb_password: {{db_networkpolicyserverdb_password}}
       db_nfsvolumedb_username: {{db_nfsvolumedb_username}}
       db_nfsvolumedb_password: {{db_nfsvolumedb_password}}
+      db_locket_username: {{db_locket_username}}
+      db_locket_password: {{db_locket_password}}
+      db_silk_username: {{db_silk_username}}
+      db_silk_password: {{db_silk_password}}
 
   - task: configure-ert
     file: pcf-pipelines/tasks/install-ert/configure-ert/task.yml
@@ -307,6 +311,15 @@ jobs:
       pcf_ert_domain: {{ERT_DOMAIN}}
       pcf_opsman_admin: {{OPSMAN_USER}}
       pcf_opsman_admin_passwd: {{OPSMAN_PASSWORD}}
+
+  - task: disable-errands
+    file: pcf-pipelines/tasks/disable-errands/task.yml
+    params:
+      PRODUCT_NAME: cf
+      OPSMAN_URI: {{OPSMAN_URI}}
+      OPSMAN_USERNAME: {{OPSMAN_USER}}
+      OPSMAN_PASSWORD: {{OPSMAN_PASSWORD}}
+      ERRANDS_TO_DISABLE: {{ert_errands_to_disable}}
 
   - task: deploy-ert
     file: pcf-pipelines/tasks/apply-changes/task.yml
@@ -326,7 +339,7 @@ jobs:
     - get: pcf-pipelines
     - get: terraform-state
   - task: wipe
-    file: pcf-pipelines/tasks/install-pcf-aws/wipe-env/task.yml
+    file: pcf-pipelines/install-pcf/aws/tasks/wipe-env/task.yml
     params:
       OPSMAN_URI: {{OPSMAN_URI}}
       OPSMAN_USERNAME: {{OPSMAN_USER}}
@@ -355,3 +368,5 @@ jobs:
       TF_VAR_rds_subnet_cidr_az1: {{TF_VAR_rds_subnet_cidr_az1}}
       TF_VAR_rds_subnet_cidr_az2: {{TF_VAR_rds_subnet_cidr_az2}}
       TF_VAR_rds_subnet_cidr_az3: {{TF_VAR_rds_subnet_cidr_az3}}
+      OPSMAN_ALLOW_SSH_CIDR_RANGES: {{opsman_allow_ssh_cidr_ranges}}
+      OPSMAN_ALLOW_HTTPS_CIDR_RANGES: {{opsman_allow_https_cidr_ranges}}

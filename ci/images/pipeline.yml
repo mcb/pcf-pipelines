@@ -15,6 +15,14 @@ resources:
     username: czero
     password: {{czero_dockerhub_password}}
 
+- name: pcf-pipelines-image-rc
+  type: docker-image
+  source:
+    repository: czero/cflinuxfs2
+    tag: release-candidate
+    username: czero
+    password: {{czero_dockerhub_password}}
+
 - name: cflinuxfs2
   type: docker-image
   source:
@@ -26,6 +34,13 @@ resources:
   source:
     user: pivotal-cf
     repository: om
+    access_token: {{github_token}}
+
+- name: yaml-patch 
+  type: github-release
+  source:
+    user: krishicks
+    repository: yaml-patch 
     access_token: {{github_token}}
 
 - name: cf-cli-tarball
@@ -72,7 +87,7 @@ resources:
 
 jobs:
 - name: build-pcf-pipelines-image
-  serial: true
+  serial_groups: [pcf-pipelines-image]
   plan:
   - aggregate:
     - get: pcf-pipelines
@@ -80,6 +95,8 @@ jobs:
     - get: cflinuxfs2
       trigger: true
       params: {save: true}
+    - get: yaml-patch 
+      params: {globs: ["*linux*"]}
     - get: om
       params: {globs: ["*linux*"]}
     - get: cf-cli-tarball
@@ -104,6 +121,7 @@ jobs:
       inputs:
       - name: pcf-pipelines
       - name: om
+      - name: yaml-patch 
       - name: cf-cli-tarball
       - name: cliaas
       - name: pivnet-cli
@@ -122,6 +140,9 @@ jobs:
           cp om/om-linux workspace
           chmod +x workspace/om-linux
 
+          cp yaml-patch/yaml_patch_linux workspace
+          chmod +x workspace/yaml_patch_linux
+
           tar -C workspace -xf cf-cli-tarball/*.tgz cf
           chmod +x workspace/cf
 
@@ -135,10 +156,66 @@ jobs:
           cp govc/govc_linux_amd64 workspace/govc
           chmod +x workspace/govc
 
+          cp om-beta/om-linux workspace/om-linux-beta
+          chmod +x workspace/om-linux-beta
+
           cp stemcell-downloader/stemcell-downloader-linux workspace/stemcell-downloader
           chmod +x workspace/stemcell-downloader
 
-  - put: pcf-pipelines-image
+  - put: pcf-pipelines-image-rc
     params:
       load_base: cflinuxfs2
       build: workspace
+
+- name: test-pcf-pipelines-image
+  serial_groups: [pcf-pipelines-image]
+  plan:
+  - get: pcf-pipelines-image-rc
+    trigger: true
+    passed: [build-pcf-pipelines-image]
+    params:
+      skip_download: true
+  - task: test-for-required-binaries
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: czero/cflinuxfs2
+          tag: release-candidate
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          set -e
+          which om-linux
+          which yaml_patch_linux
+          which cf
+          which cliaas-linux
+          which pivnet-cli
+          which govc
+          which om-linux-beta
+          which stemcell-downloader
+          which jq
+          which terraform
+          which gcloud
+          which gem
+          which pip
+          which uaac
+          which aws
+          which openstack
+          which neutron
+
+- name: promote-image
+  serial_groups: [pcf-pipelines-image]
+  plan:
+  - get: pcf-pipelines-image-rc
+    passed: [test-pcf-pipelines-image]
+    trigger: true
+    params:
+      save: true
+  - put: pcf-pipelines-image
+    params:
+      load: pcf-pipelines-image-rc
+      tag_as_latest: true

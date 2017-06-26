@@ -10,6 +10,7 @@ inputs:
 - name: pcf-pipelines
 - name: version
 - name: yaml-patch
+- name: fly
 
 outputs:
 - name: pcf-pipelines-release-tarball
@@ -25,12 +26,37 @@ run:
   - |
     set -o pipefail
 
+    chmod +x yaml-patch/yaml_patch_linux
+    export PATH="$PWD/yaml-patch":$PATH
+
+    chmod +x fly/fly
+    export PATH="$PWD/fly":$PATH
+
+    # Create upgrade-ert pipeline from upgrade-tile pipeline
+    pushd pcf-pipelines
+      mkdir -p upgrade-ert
+
+      sed \
+        -e 's/^product_slug:/# product_slug:/' \
+        -e 's/^product_name:/# product_name:/' \
+        upgrade-tile/params.yml > upgrade-ert/params.yml
+
+      cat ci/yaml_license_header <(
+        cat upgrade-tile/pipeline.yml | yaml_patch_linux -o operations/create-upgrade-ert-pipeline.yml
+      ) > upgrade-ert/pipeline.yml
+    popd
+
     # Switch pcf-pipelines to point at Pivnet release of pcf-pipelines instead
     # of GitHub
-    chmod +x yaml-patch/yaml_patch_linux
-
     version=v$(cat version/version)
-    sed -i "/product_slug: pcf-automation/ {N; s/\(product_slug: pcf-automation.*product_version: \).*/\1${version}/g}" pcf-pipelines/operations/use-pivnet-release.yml
+
+    set +e # read -d '' requires this
+    read -r -d '' hardcode_pivnet_version <<EOF
+    - op: replace
+      path: /resources/name=pcf-pipelines-tarball/source/product_version
+      value: $version
+    EOF
+    set -e
 
     files=$(
       find pcf-pipelines \
@@ -41,8 +67,14 @@ run:
     )
 
     for f in ${files[@]}; do
-      cat $f | ./yaml-patch/yaml_patch_linux -o pcf-pipelines/operations/use-pivnet-release.yml > $f.bk
+      cat $f |
+      yaml_patch_linux \
+        -o pcf-pipelines/operations/use-pivnet-release.yml \
+        -o <(echo "$hardcode_pivnet_version") \
+        > $f.bk
       mv $f.bk $f
+
+      fly fmt --write --config $f
 
       # Remove git_private_key from params as it is no longer needed
       params_file=$(dirname $f)/params.yml
@@ -57,14 +89,18 @@ run:
     release:
       version: "${version}"
       release_date: "${release_date}"
+      release_notes_url: "https://github.com/pivotal-cf/pcf-pipelines/releases"
       description: |
         Concourse Pipeline Templates and Scripts for PCF Platform Ops Automation
       availability: $AVAILABILITY
       release_type: Beta Release
       eula_slug: "pivotal_beta_eula"
+      eccn: "5D002"
+      license_exception: "TSU"
       user_group_ids:
       - 6   # Pivotal Internal Early Access
       - 159 # C[0] PCF Automation Pipelines Access
+      - 64  #| Pivotal SI Partners Known and Potential Partners. 
     EOF
 
     # Create release tarball

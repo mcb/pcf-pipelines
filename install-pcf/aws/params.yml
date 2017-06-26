@@ -4,6 +4,22 @@ git_private_key:
 opsman_major_minor_version: ^1\.10\..*$
 ert_major_minor_version: ^1\.10\..*$
 
+# Errands to disable prior to deploying ERT
+# Valid values:
+#   all
+#   none
+#   "" (empty string)
+#   Any combination of the following, separated by comma:
+#     smoke-tests
+#     push-apps-manager
+#     notifications
+#     notifications-ui
+#     push-pivotal-account
+#     autoscaling
+#     autoscaling-register-broker
+#     nfsbrokerpush
+ert_errands_to_disable: none
+
 # RDS Master Credentials
 db_master_username:
 db_master_password:
@@ -29,6 +45,10 @@ db_networkpolicyserverdb_username:
 db_networkpolicyserverdb_password:
 db_nfsvolumedb_username:
 db_nfsvolumedb_password:
+db_silk_username:
+db_silk_password:
+db_locket_username:
+db_locket_password:
 
 terraform_prefix:
 
@@ -51,9 +71,15 @@ OPSMAN_USER:
 OPSMAN_PASSWORD:
 OPSMAN_URI:
 PEM:
-ERT_SSL_CERT: generate
+ERT_SSL_CERT:
 ERT_SSL_KEY:
 ROUTE_53_ZONE_ID:
+
+# if the `opsman_allow` cidr ranges are left blank then there will not be any
+# external ingress to ops manager defined in the security group
+# ingress from the local network will remain allowed for all protos
+opsman_allow_ssh_cidr_ranges: 
+opsman_allow_https_cidr_ranges: 
 
 mysql_monitor_recipient_email:  # Email address for sending mysql monitor notifications
 mysql_backups: disable   # Whether to enable MySQL backups. (disable|s3|scp)
